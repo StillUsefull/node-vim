@@ -1,5 +1,5 @@
-const fileTreeBox = require('../boxes/fileTree');
-const terminalBox = require('../boxes/terminal')
+const FileTree = require('../boxes/fileTree');
+const Terminal = require('../boxes/terminal')
 module.exports = function(parent) {
     const editorScene = blessed.box({
         label: 'node-vim',
@@ -12,14 +12,27 @@ module.exports = function(parent) {
         style: {
             border: {
                 fg: 'blue'
-            },
-            label: {
-                
             }
         }
     });
 
-    fileTreeBox(editorScene);
-    terminalBox(editorScene)
+    const fileTreeBox = new FileTree(editorScene);
+    const terminalBox = new Terminal(editorScene);
+
+    let currentFocus = 0;
+    const boxes = [fileTreeBox, terminalBox];
+
+    function focusNextBox() {
+        boxes[currentFocus].unfocus();
+        currentFocus = (currentFocus + 1) % boxes.length;
+        boxes[currentFocus].focus();
+    }
+
+    parent.key(['tab'], () => {
+        focusNextBox();
+    });
+
+    terminalBox.focus();
+
     return editorScene;
 };
