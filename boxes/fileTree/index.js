@@ -1,12 +1,13 @@
 const fs = require('fs-extra');
 const path = require('path');
-
+const blessed = require('blessed');
 
 class FileTree {
     constructor(parent, dir) {
         this.fileTreeBox = this.createFileTreeBox(parent);
         this.directoryPath = dir || process.cwd();
         this.selectedLine = 0;
+        this.selectedItem = './';  
         this.isFocused = false;
         this.initialize();
     }
@@ -46,14 +47,14 @@ class FileTree {
         this.fileTreeBox.screen.render();
     }
 
-    unfocus(){
+    unfocus() {
         this.isFocused = false;
     }
 
     async updateContent() {
         try {
             const files = await fs.readdir(this.directoryPath);
-            let content = '';
+            let content = '../\n';
             for (let file of files) {
                 const filePath = path.join(this.directoryPath, file);
                 if (await fs.stat(filePath).then(stat => stat.isDirectory())) {
@@ -79,19 +80,43 @@ class FileTree {
         this.fileTreeBox.screen.render();
     }
 
-    handleKeypress(key) {
-        if (this.isFocused){
-            if (key.name === 'up') {
-                this.selectedLine = Math.max(0, this.selectedLine - 1);
-                this.updateSelection(this.selectedLine);
-            } else if (key.name === 'down') {
-                const lines = this.fileTreeBox.getContent().split('\n');
-                this.selectedLine = Math.min(lines.length - 1, this.selectedLine + 1);
-                this.updateSelection(this.selectedLine);
-            } else if (key.name === 'enter') {
-                const content = this.fileTreeBox.getContent().split('\n');
-                const selectedItem = content[this.selectedLine];
-                console.log(`Selected: ${selectedItem}`);
+    async handleKeypress(key) {
+        if (this.isFocused) {
+            const lines = this.fileTreeBox.getContent().split('\n');
+    
+            switch (key.name) {
+                case 'up':
+                    this.selectedLine = Math.max(0, this.selectedLine - 1);
+                    this.updateSelection(this.selectedLine);
+                    break;
+                
+                case 'down':
+                    this.selectedLine = Math.min(lines.length - 1, this.selectedLine + 1);
+                    this.updateSelection(this.selectedLine);
+                    break;
+    
+                case 'enter':
+                    if (this.selectedItem === './') {
+                        this.directoryPath = path.join(this.directoryPath, '..');
+                        await this.updateContent();
+                        this.selectedLine = 0;
+                        this.updateSelection(this.selectedLine);
+                    } else {
+                        const selectedPath = path.join(this.directoryPath, this.selectedItem);
+                        const stats = await fs.stat(selectedPath);
+                        if (stats.isDirectory()) {
+                            this.directoryPath = selectedPath;
+                            await this.updateContent();
+                            this.selectedLine = 0;
+                            this.updateSelection(this.selectedLine);
+                        } else {
+                            // Handle file - leaving empty
+                        }
+                    }
+                    break;
+    
+                default:
+                    break;
             }
         }
     }

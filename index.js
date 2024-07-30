@@ -12,7 +12,7 @@ const editorScene = EditorScene(screen);
 
 screen.append(editorScene);
 
-screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+screen.key(['escape', 'C-q'], function(ch, key) {
     return process.exit(0);
 });
 

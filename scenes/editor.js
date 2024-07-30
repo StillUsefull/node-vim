@@ -1,3 +1,4 @@
+const Editor = require('../boxes/editor');
 const FileTree = require('../boxes/fileTree');
 const Terminal = require('../boxes/terminal')
 module.exports = function(parent) {
@@ -15,24 +16,23 @@ module.exports = function(parent) {
             }
         }
     });
-
     const fileTreeBox = new FileTree(editorScene);
     const terminalBox = new Terminal(editorScene);
+    const editorBox = new Editor(editorScene, 'C:\\Users\\Debis\\Desktop\\git\\node-vim\\test.js');
 
     let currentFocus = 0;
-    const boxes = [fileTreeBox, terminalBox];
+    const boxes = [fileTreeBox, terminalBox, editorBox];
 
     function focusNextBox() {
         boxes[currentFocus].unfocus();
         currentFocus = (currentFocus + 1) % boxes.length;
         boxes[currentFocus].focus();
+        editorScene.render()
     }
 
-    parent.key(['tab'], () => {
+    parent.key(['M-e'], () => {
         focusNextBox();
     });
-
-    terminalBox.focus();
 
     return editorScene;
 };
