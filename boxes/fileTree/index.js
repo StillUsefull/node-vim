@@ -1,11 +1,13 @@
 const fs = require('fs-extra');
 const path = require('path');
-const blessed = require('blessed');
+const createPopup = require('../popup');
+
 
 class FileTree {
-    constructor(parent, dir) {
+    constructor(parent, fileSelectCallback) {
         this.fileTreeBox = this.createFileTreeBox(parent);
-        this.directoryPath = dir || process.cwd();
+        this.fileSelectCallback = fileSelectCallback;
+        this._directoryPath = process.cwd();
         this.selectedLine = 0;
         this.selectedItem = './';  
         this.isFocused = false;
@@ -23,13 +25,16 @@ class FileTree {
             border: {
                 type: 'line'
             },
+            scrollbar: {
+                bg: 'blue'
+            },
             style: {
                 border: {
                     fg: 'blue'
                 },
                 focus: {
                     border: {
-                        fg: "yellow"
+                        fg: 'yellow'
                     }
                 }
             },
@@ -54,71 +59,86 @@ class FileTree {
     async updateContent() {
         try {
             const files = await fs.readdir(this.directoryPath);
-            let content = '../\n';
-            for (let file of files) {
+            const content = ['-> ../', ...await Promise.all(files.map(async (file) => {
                 const filePath = path.join(this.directoryPath, file);
-                if (await fs.stat(filePath).then(stat => stat.isDirectory())) {
-                    file += '/';
-                }
-                content += file + '\n';
-            }
+                const isDirectory = await fs.stat(filePath).then(stat => stat.isDirectory());
+                return isDirectory ? `${file}/` : file;
+            }))].join('\n');
             this.fileTreeBox.setContent(content);
+            this.selectedLine = 0;
             this.fileTreeBox.screen.render();
         } catch (error) {
-            console.error(error);
+            createPopup('error', this.fileTreeBox.parent, error.message);
         }
     }
 
     updateSelection(newLine) {
         let content = this.fileTreeBox.getContent();
-        const cleanContent = content.replace(/-> /g, '');
-        const lines = cleanContent.split('\n');
-        const updatedLines = lines.map((line, index) =>
-            index === newLine ? `-> ${line}` : `${line}`
-        ).join('\n');
-        this.fileTreeBox.setContent(updatedLines);
+        const cleanContent = _.replace(content, /-> /g, '');
+        const lines = _.split(cleanContent, '\n');
+        const updatedLines = _.map(lines, (line, index) => 
+            index === newLine ? `-> ${line}` : line
+        );
+        const updatedContent = _.join(updatedLines, '\n');
+        this.fileTreeBox.setContent(updatedContent);
         this.fileTreeBox.screen.render();
     }
 
     async handleKeypress(key) {
-        if (this.isFocused) {
-            const lines = this.fileTreeBox.getContent().split('\n');
-    
-            switch (key.name) {
-                case 'up':
-                    this.selectedLine = Math.max(0, this.selectedLine - 1);
-                    this.updateSelection(this.selectedLine);
-                    break;
-                
-                case 'down':
-                    this.selectedLine = Math.min(lines.length - 1, this.selectedLine + 1);
-                    this.updateSelection(this.selectedLine);
-                    break;
-    
-                case 'enter':
-                    if (this.selectedItem === './') {
-                        this.directoryPath = path.join(this.directoryPath, '..');
-                        await this.updateContent();
-                        this.selectedLine = 0;
-                        this.updateSelection(this.selectedLine);
-                    } else {
-                        const selectedPath = path.join(this.directoryPath, this.selectedItem);
-                        const stats = await fs.stat(selectedPath);
-                        if (stats.isDirectory()) {
-                            this.directoryPath = selectedPath;
-                            await this.updateContent();
-                            this.selectedLine = 0;
-                            this.updateSelection(this.selectedLine);
-                        } else {
-                            // Handle file - leaving empty
-                        }
-                    }
-                    break;
-    
-                default:
-                    break;
+        if (!this.isFocused) return;
+
+        const lines = this.fileTreeBox.getContent().split('\n');
+        switch (key.name) {
+            case 'up':
+                this.selectedLine = _.max([0, this.selectedLine - 1]);
+                this.updateSelection(this.selectedLine);
+                break;
+            case 'down':
+                this.selectedLine = _.min([lines.length - 1, this.selectedLine + 1]); 
+                this.updateSelection(this.selectedLine);
+                break;
+            case 'enter':
+                await this.handleEnter(lines);
+                break;
+            default:
+                break;
+        }
+    }
+
+    async handleEnter(lines) {
+        this.selectedItem = _.replace(lines[this.selectedLine], /^-> /, '');
+        const selectedPath = path.join(this.directoryPath, this.selectedItem);
+        if (this.selectedItem === '../') {
+            this.directoryPath = path.join(this.directoryPath, '..');
+        } else {
+            try {
+                const stats = await fs.stat(selectedPath);
+                if (stats.isDirectory()) {
+                    this.directoryPath = selectedPath;
+                } else {
+                    this.fileSelectCallback(selectedPath);
+                }
+            } catch (error) {
+                createPopup('error', this.fileTreeBox.parent, error.message);
             }
         }
+    }
+
+    set directoryPath(newPath) {
+        this._directoryPath = newPath;
+        this.updateContent();
+        if (this.watcher) {
+            this.watcher.close();
+        }
+        this.watcher = fs.watch(this._directoryPath, (eventType, filename) => {
+            if (eventType === 'rename' && filename) {
+                this.updateContent();
+            }
+        });
+    }
+
+    get directoryPath() {
+        return this._directoryPath;
     }
 
     initialize() {
@@ -131,12 +151,6 @@ class FileTree {
         });
 
         this.fileTreeBox.screen.key(['up', 'down', 'enter'], (ch, key) => this.handleKeypress(key));
-    }
-
-    destroy() {
-        if (this.watcher) {
-            this.watcher.close();
-        }
     }
 }
 

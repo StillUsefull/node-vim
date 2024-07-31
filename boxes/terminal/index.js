@@ -6,6 +6,7 @@ class Terminal {
         this.isFocused = false;
         this.initialize();
         this.length = 0;
+        this.content = '';  
     }
 
     createTerminalBox(parent) {
@@ -42,17 +43,16 @@ class Terminal {
     focus() {
         this.isFocused = true;
         this.terminalBox.focus();
-        this.terminalBox.style.border.fg = 'yellow';
         this.terminalBox.screen.render();
     }
 
     unfocus() {
         this.isFocused = false;
-        this.terminalBox.style.border.fg = 'blue';
     }
 
     updateContent(newContent) {
-        this.terminalBox.setContent(newContent);
+        this.content = newContent;
+        this.terminalBox.setContent(this.content);
         this.terminalBox.screen.render();
     }
 
@@ -61,8 +61,8 @@ class Terminal {
     }
 
     appendContent(newContent) {
-        this.terminalBox.setContent(this.terminalBox.getContent() + newContent);
-        this.terminalBox.screen.render();
+        this.content += newContent;
+        this.updateContent(this.content);
         this.scrollToBottom();
     }
 
@@ -70,7 +70,6 @@ class Terminal {
         this.terminalBox.setScrollPerc(100); 
         this.terminalBox.screen.render(); 
     }
-
 
     initialize() {
         const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
@@ -86,26 +85,28 @@ class Terminal {
         this.child.stderr.setEncoding('utf8');
 
         this.child.stdout.on('data', (data) => {
-            this.appendContent(data.toString());
+            this.appendContent(_.toString(data));
         });
 
         this.child.stderr.on('data', (data) => {
-            this.appendContent(data.toString());
+            this.appendContent(_.toString(data));
         });
 
         this.terminalBox.on('keypress', (ch, key) => {
             if (this.isFocused) {
-                if (key.full === 'enter') {
+                if (key.name === 'return') {
                     this.length = 0;
                     this.child.stdin.write('\n');
-                } else if (key.full === 'backspace' && this.length > 0) {
+                } else if (key.name === 'backspace' && this.length > 0) {
                     this.length -= 1;
                     this.child.stdin.write('\b');
-                    const content = this.terminalBox.getContent();
-                    this.updateContent(content.slice(0, -1));
+                    this.content = _.slice(this.content, 0, -1);
+                    this.updateContent(this.content);
                 } else if (ch) {
                     this.length += 1;
                     this.child.stdin.write(ch);
+                    this.content += ch;
+                    this.updateContent(this.content);
                 }
             }
         });

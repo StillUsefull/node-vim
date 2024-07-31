@@ -1,26 +1,48 @@
 global.blessed = require('blessed');
-
+global._ = require('lodash')
 const EditorScene = require('./scenes/editor.js');
+
+const program = blessed.program();
+
 
 const screen = blessed.screen({
     smartCSR: true,
-    title: 'node-vim'
+    title: 'node-vim',
+    program: program
 });
 
 
-const editorScene = EditorScene(screen);
-
+const {editorScene} = new EditorScene(screen);
 screen.append(editorScene);
 
+
 screen.key(['escape', 'C-q'], function(ch, key) {
+    program.clear();
+    program.disableMouse();
+    program.normalBuffer();
     return process.exit(0);
 });
 
-screen.on('size', (width, height) => {
-    screen.columns = width;
-    screen.rows = height;
-    screen.emit('resize')
-})
 
-editorScene.focus();
+screen.on('resize', () => {
+    screen.render();
+});
+
 screen.render();
+program.hideCursor();
+program.alternateBuffer();
+
+
+program.on('keypress', (ch, key) => {
+    if (key.name === 'q' && key.ctrl) {
+        program.clear();
+        program.disableMouse();
+        program.normalBuffer();
+        return process.exit(0);
+    }
+});
+
+
+program.on('resize', () => {
+    screen.emit('resize');
+});
