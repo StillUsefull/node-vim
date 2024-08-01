@@ -1,14 +1,14 @@
 const fs = require('fs-extra');
 const createPopup = require('../popup');
+const Observer = require('../../pluginManager/observer')
 
 class Editor {
-    constructor(parent, filePath, nextBoxCallback) {
-        this.parent = parent;
+    constructor(parent, filePath) {
         this.filePath = filePath;
         this.box = this.createEditorBox(parent);
         this.isFocused = false;
-        this.nextBoxCallback = nextBoxCallback;
         this.content = '';
+        this.changeQueue = [];
         this.cursor = { x: 0, y: 0 };
         this.initialize();
     }
@@ -17,7 +17,7 @@ class Editor {
         return blessed.box({
             label: 'Editor',
             parent,
-            top: 0,
+            top: 0, 
             right: 0,
             width: '84%',
             height: '73%',
@@ -38,6 +38,7 @@ class Editor {
                     fg: 'blue'
                 }
             },
+            tags: true,
             scrollable: true,
             mouse: true,
             keys: true,
@@ -65,6 +66,36 @@ class Editor {
         return this.content;
     }
 
+
+    queueChange(changeFunction){
+        this.changeQueue.push(changeFunction);
+        if (!this.isApplyingChange) {
+            this.applyNextChange();
+        }
+    }
+
+    async applyNextChange() {
+        if (this.changeQueue.length === 0) {
+            this.isApplyingChange = false;
+            return;
+        }
+
+        this.isApplyingChange = true;
+        const changeFunction = this.changeQueue.shift();
+
+        try {
+            await changeFunction();
+        } catch (err) {
+            console.error('Failed to apply change:', err);
+        } finally {
+            this.applyNextChange();
+        }
+    }
+
+    removeTags(content) {
+        return content.replace(/\x1b\[\d+(;\d+)*m/g, '');
+    }
+
     async setFilePath(filePath) {
         this.filePath = filePath;
         if (filePath) {
@@ -80,7 +111,7 @@ class Editor {
     }
 
     async saveFile() {
-        const content = this.getContent();
+        const content = this.removeTags(this.getContent());
         try {
             await fs.writeFile(this.filePath, content, 'utf8');
             createPopup('success', this.box, 'File was saved');
@@ -92,7 +123,7 @@ class Editor {
 
     updateCursorPosition(newX, newY) {
         const lines = this.content.split('\n');
-        this.cursor.x = _.clamp(newX, 0, (lines[this.cursor.y] || '').length);
+        this.cursor.x = _.clamp(newX, 0, (lines[this.cursor.y] || ' ').length);
         this.cursor.y = _.clamp(newY, 0, lines.length - 1);
         this.render();
     }
@@ -189,18 +220,24 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.saveFile();
+                        const content = this.removeTags(this.getContent());
+                        Observer.emit('save', {content})
                         break;
                     case (key.name === 'left'):
                         this.moveCursorLeft();
+                        Observer.emit('cursor-move', this.cursor)
                         break;
                     case (key.name === 'right'):
                         this.moveCursorRight();
+                        Observer.emit('cursor-move', this.cursor)
                         break;
                     case (key.name === 'up'):
                         this.moveCursorUp();
+                        Observer.emit('cursor-move', this.cursor)
                         break;
                     case (key.name === 'down'):
                         this.moveCursorDown();
+                        Observer.emit('cursor-move', this.cursor)
                         break;
                     case (key.name === 'backspace'):
                         this.handleBackspace();
