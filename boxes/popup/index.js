@@ -23,7 +23,6 @@ function createPopup(type, parent, content, timeout = 2000) {
         tags: true,
         shadow: true
     });
-
     parent.append(popup);
     parent.screen.render();
 

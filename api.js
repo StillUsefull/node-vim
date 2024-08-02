@@ -1,17 +1,12 @@
 const WebSocket = require('ws');
-const createPopup = require('../../boxes/popup');
-const Observer = require('../observer')
+const createPopup = require('./boxes/popup');
 
 class Api {
-    constructor(port, editor) {
-        this.editor = editor;
-        this.wss = new WebSocket.Server({ port }, () => {
-            createPopup('success', editor.box, `Plugin manager started on port ${port}`);
-        });
+    constructor(port, observer) {
+        this.wss = new WebSocket.Server({ port });
         this.clients = [];
-
+        this.observer = observer;
         this.setupWebSocketServer();
-        this.setupObserver();
     }
 
     setupWebSocketServer() {
@@ -20,13 +15,6 @@ class Api {
             ws.on('message', (message) => this.handleMessage(ws, message));
             ws.on('close', () => this.removeClient(ws));
         });
-    }
-
-    setupObserver() {
-        Observer.on('text-change', (content) => this.broadcast('text-change', content));
-        Observer.on('cursor-move', (position) => this.broadcast('cursor-move', position));
-        Observer.on('save', (fileMetadata) => this.broadcast('save', fileMetadata));
-        Observer.on('key-pressed', (pressedMetadata) => this.broadcast('key-pressed', pressedMetadata));
     }
 
     removeClient(ws) {
@@ -51,17 +39,17 @@ class Api {
     handleMessage(ws, message) {
         try {
             const { event, data } = JSON.parse(message);
+            const currentTab = this.observer.getCurrentTab();
+
             switch (event) {
-                case 'connection': 
-                    createPopup('success', this.editor, message )
                 case 'textChange':
-                    this.editor.queueChange(() => this.editor.setContent(data));
+                    currentTab.queueChange(() => currentTab.setContent(data));
                     break;
                 case 'cursorMove':
-                    this.editor.queueChange(() => this.editor.updateCursorPosition(data.x, data.y));
+                    currentTab.queueChange(() => currentTab.updateCursorPosition(data.x, data.y));
                     break;
                 case 'save':
-                    this.editor.queueChange(() => this.editor.saveFile(data));
+                    currentTab.queueChange(() => currentTab.saveFile(data));
                     break;
                 default:
                     this.sendError(ws, `Unknown event: ${event}`);

@@ -100,7 +100,7 @@ class Terminal {
                 } else if (key.name === 'backspace' && this.length > 0) {
                     this.length -= 1;
                     this.child.stdin.write('\b');
-                    this.content = this.content.slice(0, -1); // Используйте slice для удаления последнего символа
+                    this.content = this.content.slice(0, -1); 
                     this.updateContent(this.content);
                 } else if (ch) {
                     this.length += 1;
