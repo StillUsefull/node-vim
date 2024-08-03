@@ -1,17 +1,13 @@
 const Editor = require('../boxes/editor/Editor');
 const FileTree = require('../boxes/fileTree');
-const Terminal = require('../boxes/terminal');
 const observer = require('../observer');
 
 class EditorScene {
     constructor(parent) {
         this.editorScene = this.createEditorScene(parent);
         this.fileTreeBox = new FileTree(this.editorScene, this.openFile.bind(this));
-        this.terminalBox = new Terminal(this.editorScene);
 
-        // Add each box separately
         observer.addBox(this.fileTreeBox);
-        observer.addBox(this.terminalBox);
 
         this.initialize();
     }

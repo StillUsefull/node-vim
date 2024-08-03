@@ -17,7 +17,7 @@ class Window {
             top: 0, 
             right: 0,
             width: '84%',
-            height: '73%',
+            height: '99%',
             border: {
                 type: 'line'
             },
