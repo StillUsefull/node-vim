@@ -51,6 +51,7 @@ class Observer extends EventEmitter {
         }
         this.boxes[currentIndex].focus();
         this.emit('box-focused', this.boxes[currentIndex]);
+        console.log(observer.boxes)
     }
 
     focusNextEditor() {

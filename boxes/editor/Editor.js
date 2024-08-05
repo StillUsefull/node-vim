@@ -1,11 +1,11 @@
 
 const FileBuffer = require('./File.js')
 const Window = require('./Window.js')
-
+const observer = require('../../observer.js')
 class Editor {
     constructor(parent, filePath) {
         this.buffer = new FileBuffer(filePath);
-        this.window = new Window(parent, this.buffer);
+        this.window = new Window(parent, this.buffer, this.buffer.getFileName());
         this.initialize();
     }
     
@@ -26,24 +26,24 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
-                            Observer.emit('save', { content: this.buffer.getContent() });
+                            observer.emit('save', { content: this.buffer.toString() });
                         });
                         break;
                     case (key.name === 'left'):
-                        this.window.moveCursorLeft();
-                        Observer.emit('cursor-move', this.window.cursor);
+                        this.window.moveCursorHorizontal(-1);
+                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'right'):
-                        this.window.moveCursorRight();
-                        Observer.emit('cursor-move', this.window.cursor);
+                        this.window.moveCursorHorizontal(1);
+                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'up'):
-                        this.window.moveCursorUp();
-                        Observer.emit('cursor-move', this.window.cursor);
+                        this.window.moveCursorVertical(-1);
+                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'down'):
-                        this.window.moveCursorDown();
-                        Observer.emit('cursor-move', this.window.cursor);
+                        this.window.moveCursorVertical(1);
+                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'backspace'):
                         this.window.handleBackspace();

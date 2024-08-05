@@ -6,9 +6,7 @@ class EditorScene {
     constructor(parent) {
         this.editorScene = this.createEditorScene(parent);
         this.fileTreeBox = new FileTree(this.editorScene, this.openFile.bind(this));
-
         observer.addBox(this.fileTreeBox);
-
         this.initialize();
     }
 
@@ -29,64 +27,35 @@ class EditorScene {
         });
     }
 
-    createTab(label) {
-        const tab = blessed.box({
-            parent: this.editorScene,
-            top: 0,
-            left: this.tabs.length * 10,
-            width: 10,
-            height: 1,
-            content: label,
-            border: {
-                type: 'line'
-            },
-            style: {
-                fg: this.currentTab === this.tabs.length ? 'yellow' : 'white',
-                bg: 'blue'
-            },
-            clickable: true
-        });
-
-        tab.on('click', () => {
-            this.switchTab(this.tabs.length);
-        });
-
-        this.tabs.push(tab);
-    }
-
-    switchTab(index) {
-        const editors = observer.editors;
-        if (index < 0 || index >= editors.length) return;
-        editors[this.currentTab].unfocus();
-        this.currentTab = index;
-        editors[this.currentTab].focus();
-        this.updateTabStyles();
-    }
-
-    updateTabStyles() {
-        this.tabs.forEach((tab, index) => {
-            tab.style.fg = index === this.currentTab ? 'yellow' : 'white';
-        });
-        this.editorScene.render();
-    }
+   
 
     openFile(filePath) {
-        let editor = observer.getEditorByFilePath(filePath);
-        if (!editor) {
-            editor = new Editor(this.editorScene, filePath);
-            observer.addEditor(editor, filePath);
-            this.createTab(filePath.split('/').pop());
+        if (this.editor) {
+            this.editor.unfocus();  
         }
-        this.switchTab(observer.getFilePaths().indexOf(filePath));
+        this.editor = new Editor(this.editorScene, filePath);
+        observer.addBox(this.editor.window, filePath);
+        this.editor.focus();  
     }
 
     initialize() {
-        this.editorScene.key(['tab'], () => {
+        this.editorScene.key(['home'], () => {
             observer.emit('focus-next-box');
         });
-        if (observer.editors.length > 0) {
-            observer.editors[0].focus();
-        }
+
+        observer.on('focus-next-box', () => {
+            if (this.fileTreeBox.isFocused()) {
+                this.fileTreeBox.unfocus();
+                if (this.editor) {
+                    this.editor.focus();
+                }
+            } else if (this.editor && this.editor.window.isFocused()) {
+                this.editor.unfocus();
+                this.fileTreeBox.focus();
+            }
+        });
+
+        this.fileTreeBox.focus();
     }
 }
 
