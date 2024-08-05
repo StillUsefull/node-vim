@@ -4,40 +4,21 @@ const Api = require('./api');
 class Observer extends EventEmitter {
     constructor() {
         super();
-        this.editors = [];
-        this.filePaths = [];
         this.boxes = [];
         this.currentTab = 0;
 
         this.api = new Api(3000, this);
 
         this.on('focus-next-box', () => this.focusNextBox());
-        this.on('focus-next-tab', () => this.focusNextEditor());
         this.on('text-change', (content) => this.api.broadcast('text-change', content));
         this.on('cursor-move', (position) => this.api.broadcast('cursor-move', position));
         this.on('save', (fileMetadata) => this.api.broadcast('save', fileMetadata));
         this.on('key-pressed', (pressedMetadata) => this.api.broadcast('key-pressed', pressedMetadata));
     }
 
-    addEditor(editor, filePath) {
-        this.editors.push(editor);
-        this.filePaths.push(filePath);
-    }
-
-    getEditorByFilePath(filePath) {
-        const index = this.filePaths.indexOf(filePath);
-        if (index !== -1) {
-            return this.editors[index];
-        }
-        return null;
-    }
 
     addBox(box) {
         this.boxes.push(box);
-    }
-
-    getCurrentTab() {
-        return this.editors[this.currentTab];
     }
 
     focusNextBox() {
@@ -51,15 +32,6 @@ class Observer extends EventEmitter {
         }
         this.boxes[currentIndex].focus();
         this.emit('box-focused', this.boxes[currentIndex]);
-        console.log(observer.boxes)
-    }
-
-    focusNextEditor() {
-        if (this.editors.length === 0) return;
-        this.editors[this.currentTab].unfocus();
-        this.currentTab = (this.currentTab + 1) % this.editors.length;
-        this.editors[this.currentTab].focus();
-        this.emit('editor-focused', this.filePaths[this.currentTab]);
     }
 }
 

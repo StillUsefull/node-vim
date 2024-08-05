@@ -1,12 +1,13 @@
-const blessed = require('blessed');
+const createPopup = require('../popup')
 const _ = require('lodash');
+const Cursor = require('./Cursor')
 
 class Window {
     constructor(parent, buffer, label) {
         this.buffer = buffer;
         this.box = this.createWindowBox(parent, label);
         this.isFocused = false;
-        this.cursor = { x: 0, y: 0 };
+        this.cursor = new Cursor();
         this.render();
     }
 
@@ -57,11 +58,12 @@ class Window {
     updateCursorPosition(newX, newY) {
         try {
             const lines = this.buffer.lines;
-            this.cursor.y = _.clamp(newY, 0, lines.length - 1);
-            this.cursor.x = _.clamp(newX, 0, (lines[this.cursor.y] || '').length);
+            const maxX = (lines[this.cursor.y] || '').length;
+            const maxY = lines.length - 1;
+            this.cursor.updatePosition(newX, newY, maxX, maxY);
             this.render();
         } catch (error) {
-            console.error('Error updating cursor position:', error);
+            createPopup('error', this.box, error.message)
         }
     }
 
@@ -79,7 +81,7 @@ class Window {
             this.buffer.setLine(this.cursor.y, lines[this.cursor.y]);
             this.render();
         } catch (error) {
-            console.error('Error handling backspace:', error);
+            createPopup('error', this.box, error.message)
         }
     }
 
@@ -96,7 +98,7 @@ class Window {
             this.updateCursorPosition(0, this.cursor.y + 1);
             this.render();
         } catch (error) {
-            console.error('Error handling enter:', error);
+            createPopup('error', this.box, error.message)
         }
     }
 
@@ -112,7 +114,7 @@ class Window {
             this.updateCursorPosition(this.cursor.x + 1, this.cursor.y);
             this.render();
         } catch (error) {
-            console.error('Error handling input:', error);
+            createPopup('error', this.box, error.message)
         }
     }
 
@@ -122,10 +124,10 @@ class Window {
             this.box.setContent(content);
             this.box.screen.render();
         } catch (error) {
-            console.error('Error rendering:', error);
+            createPopup('error', this.box, error.message)
         }
     }
-    
+
     getDisplayContent() {
         const lines = this.buffer.lines.map((line, i) => {
             if (i === this.cursor.y) {
@@ -133,7 +135,7 @@ class Window {
             }
             return line;
         });
-        return lines.join('\n');
+        return lines.join(' \n');
     }
 
     highlightCursor(line) {
@@ -150,8 +152,7 @@ class Window {
 
     moveCursorVertical(count) {
         const lines = this.buffer.lines;
-        const newY = this.cursor.y + count;
-        this.cursor.y = _.clamp(newY, 0, lines.length - 1);
+        this.cursor.moveVertical(count, lines.length);
         this.updateCursorPosition(this.cursor.x, this.cursor.y);
     }
 
@@ -167,8 +168,7 @@ class Window {
             newX = 0;
         }
 
-        const lineLength = lines[this.cursor.y] ? lines[this.cursor.y].length : 0;
-        this.cursor.x = _.clamp(newX, 0, lineLength);
+        this.cursor.moveHorizontal(count, lines[this.cursor.y] ? lines[this.cursor.y].length : 0);
         this.updateCursorPosition(this.cursor.x, this.cursor.y);
     }
 }

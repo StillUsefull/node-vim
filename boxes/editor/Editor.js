@@ -26,7 +26,7 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
-                            observer.emit('save', { content: this.buffer.toString() });
+                            observer.emit('save', { content: this.buffer.to() });
                         });
                         break;
                     case (key.name === 'left'):
