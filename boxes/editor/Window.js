@@ -8,6 +8,7 @@ class Window {
         this.box = this.createWindowBox(parent, label);
         this.isFocused = false;
         this.cursor = new Cursor();
+        this.data = { preferredCursorX: 0, updatePreferredX: true };
         this.render();
     }
 
@@ -56,9 +57,11 @@ class Window {
     updateCursorPosition(newX, newY) {
         try {
             const lines = this.buffer.lines;
-            const maxX = (lines[this.cursor.y] || '').length;
+            const maxX = (lines[newY] || '').length;
             const maxY = lines.length - 1;
+            newX = Math.min(newX, maxX);
             this.cursor.updatePosition(newX, newY, maxX, maxY);
+            this.data.preferredCursorX = this.cursor.x;
             this.render();
         } catch (error) {
             createPopup('error', this.box, error.message);
@@ -86,13 +89,19 @@ class Window {
     handleEnter() {
         try {
             const lines = this.buffer.lines;
-            const currentLine = lines[this.cursor.y];
-            lines[this.cursor.y] = currentLine.slice(0, this.cursor.x);
-            lines.splice(this.cursor.y + 1, 0, currentLine.slice(this.cursor.x));
-            this.buffer.setLine(this.cursor.y, lines[this.cursor.y]);
+            const currentLine = lines[this.cursor.y] || '';
+    
+            const beforeCursor = currentLine.slice(0, this.cursor.x);
+            const afterCursor = currentLine.slice(this.cursor.x);
+    
+            lines[this.cursor.y] = beforeCursor;
+            lines.splice(this.cursor.y + 1, 0, afterCursor);
+    
+            this.buffer.setLine(this.cursor.y, beforeCursor);
             if (this.cursor.y + 1 < lines.length) {
-                this.buffer.setLine(this.cursor.y + 1, lines[this.cursor.y + 1]);
+                this.buffer.setLine(this.cursor.y + 1, afterCursor);
             }
+    
             this.updateCursorPosition(0, this.cursor.y + 1);
             this.render();
         } catch (error) {
@@ -133,9 +142,9 @@ class Window {
             }
             return this.highlightKeywords(line, words, keywordStyle);
         });
-        return lines.join('\n');
+
+        return lines.map((line, index) => `${index + 1} ${line}`).join('\n');
     }
-    
 
     colorize(text, options = {}) {
         const {
@@ -144,21 +153,21 @@ class Window {
             bold = false,
             underline = false
         } = options;
-    
+
         const stylesMap = {
             '1': bold,
             '4': underline,
             [`38;5;${fg}`]: fg,
             [`48;5;${bg}`]: bg
         };
-    
+
         const styles = Object.keys(stylesMap)
             .filter(key => stylesMap[key])
             .join(';');
-    
+
         const stylePrefix = styles ? `\x1b[${styles}m` : '';
         const resetStyle = '\x1b[0m';
-    
+
         return `${stylePrefix}${text}${resetStyle}`;
     }
 
@@ -180,34 +189,68 @@ class Window {
         return line;
     }
 
-    moveCursorVertical(count) {
+    moveCursorVertical(count, paragraphs) {
         const lines = this.buffer.lines;
-        let newY = this.cursor.y + count;
-        newY = Math.max(0, Math.min(newY, lines.length - 1));
-        if (lines[newY].length === 0) {
-            this.cursor.x = 0;
+        let cursor = { row: this.cursor.y, column: this.cursor.x };
+    
+        
+        if (count < 0 && cursor.row === 0) {
+            cursor.row = 0;
+            cursor.column = 0;
+        } else if (count > 0 && cursor.row === lines.length - 1) {
+            cursor.row = lines.length - 1;
+            cursor.column = lines[cursor.row].length;
         } else {
-            this.cursor.x = Math.min(this.cursor.x, lines[newY].length);
+            if (paragraphs) {
+                paragraphs = Math.abs(count);
+                const direction = count ? paragraphs / count : 0;
+                while (paragraphs--) {
+                    while (true) {
+                        cursor.row += direction;
+    
+                        if (!(0 <= cursor.row && cursor.row < lines.length)) break;
+                        if (/^\s*$/g.test(lines[cursor.row])) break;
+                    }
+                }
+            } else {
+                cursor.row += count;
+            }
         }
-
-        this.cursor.moveVertical(count, lines.length);
-        this.updateCursorPosition(this.cursor.x, newY);
+    
+        
+        let preferredX = this.data.preferredCursorX;
+        if (typeof preferredX !== 'undefined') {
+            cursor.column = Math.min(preferredX, lines[cursor.row].length);
+        }
+    
+        this.data.updatePreferredX = false;
+        this.updateCursorPosition(cursor.column, cursor.row);
+        this.data.updatePreferredX = true;
     }
 
     moveCursorHorizontal(count) {
         const lines = this.buffer.lines;
         let newX = this.cursor.x + count;
-
-        if (newX < 0 && this.cursor.y > 0) {
-            this.cursor.y -= 1;
-            newX = lines[this.cursor.y].length;
-        } else if (newX > (lines[this.cursor.y] || '').length && this.cursor.y < lines.length - 1) {
-            this.cursor.y += 1;
-            newX = 0;
+        let newY = this.cursor.y;
+    
+        
+        if (newX < 0) {
+            if (newY > 0) {
+                newY -= 1;
+                newX = lines[newY].length;
+            } else {
+                newX = 0;  
+            }
+        } else if (newX > (lines[newY] || '').length) {
+            if (newY < lines.length - 1) {
+                newY += 1;
+                newX = 0;
+            } else {
+                newX = (lines[newY] || '').length;  
+            }
         }
-
-        this.cursor.moveHorizontal(count, lines[this.cursor.y] ? lines[this.cursor.y].length : 0);
-        this.updateCursorPosition(this.cursor.x, this.cursor.y);
+    
+        this.updateCursorPosition(newX, newY);
     }
 }
 
