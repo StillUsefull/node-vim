@@ -1,12 +1,13 @@
 
 const FileBuffer = require('./File.js')
 const Window = require('./Window.js')
-const observer = require('../../observer.js')
+const observer = require('../../observer.js');
+const createPopup = require('../popup/index.js');
 class Editor {
-    constructor(parent, filePath) {
+    constructor(parent, filePath, treeBox) {
         this.buffer = new FileBuffer(filePath);
         this.window = new Window(parent, this.buffer, this.buffer.getFileName());
-        this.initialize();
+        this.initialize(treeBox);
     }
     
     focus(){
@@ -17,7 +18,7 @@ class Editor {
         this.window.unfocus()
     }
     
-    async initialize() {
+    async initialize(treeBox) {
         await this.buffer.load();
         this.window.render();
 
@@ -26,7 +27,8 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
-                            observer.emit('save', { content: this.buffer.to() });
+                            createPopup('success', this.window.box, 'File was saved successfully')
+                            // observer.emit('save', { content:  });
                         });
                         break;
                     case (key.name === 'left'):
@@ -51,6 +53,9 @@ class Editor {
                     case (key.name === 'return'):
                         this.window.handleEnter();
                         break;
+                    case (key.name === 'escape'):
+                        this.window.unfocus();
+                        treeBox.focus()
                     default:
                         if (ch) {
                             this.window.handleInput(ch);

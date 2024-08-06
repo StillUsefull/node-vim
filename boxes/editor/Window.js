@@ -38,9 +38,7 @@ class Window {
             },
             tags: true,
             scrollable: true,
-            mouse: true,
             keys: true,
-            vi: true,
             content: '',
         });
     }

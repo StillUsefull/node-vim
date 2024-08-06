@@ -16,14 +16,6 @@ const {editorScene} = new EditorScene(screen);
 screen.append(editorScene);
 
 
-screen.key(['escape', 'C-q'], function(ch, key) {
-    program.clear();
-    program.disableMouse();
-    program.normalBuffer();
-    return process.exit(0);
-});
-
-
 screen.on('resize', () => {
     screen.render();
 });
