@@ -1,23 +1,27 @@
+const createPopup = require('../popup');
+const FileBuffer = require('./File');
+const Window = require('./Window');
+const PluginManager = require('./pluginManager');
 
-const FileBuffer = require('./File.js')
-const Window = require('./Window.js')
-const observer = require('../../observer.js');
-const createPopup = require('../popup/index.js');
+
 class Editor {
     constructor(parent, filePath, treeBox) {
         this.buffer = new FileBuffer(filePath);
         this.window = new Window(parent, this.buffer, this.buffer.getFileName());
+
+        this.pluginManager = new PluginManager();
+
         this.initialize(treeBox);
     }
-    
-    focus(){
-        this.window.focus()
+
+    focus() {
+        this.window.focus();
     }
 
-    unfocus(){
-        this.window.unfocus()
+    unfocus() {
+        this.window.unfocus();
     }
-    
+
     async initialize(treeBox) {
         await this.buffer.load();
         this.window.render();
@@ -27,25 +31,20 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
-                            createPopup('success', this.window.box, 'File was saved successfully')
-                            // observer.emit('save', { content:  });
+                            createPopup('success', this.window.box, 'File was saved successfully');
                         });
                         break;
                     case (key.name === 'left'):
                         this.window.moveCursorHorizontal(-1);
-                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'right'):
                         this.window.moveCursorHorizontal(1);
-                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'up'):
                         this.window.moveCursorVertical(-1);
-                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'down'):
                         this.window.moveCursorVertical(1);
-                        observer.emit('cursor-move', this.window.cursor);
                         break;
                     case (key.name === 'backspace'):
                         this.window.handleBackspace();
@@ -55,15 +54,23 @@ class Editor {
                         break;
                     case (key.name === 'escape'):
                         this.window.unfocus();
-                        treeBox.focus()
+                        treeBox.focus();
+                        break;
                     default:
                         if (ch) {
                             this.window.handleInput(ch);
                         }
                         break;
                 }
+                this.pluginManager.handleKeyPress(key, this);
             }
         });
+        const originalGetDisplayContent = this.window.getDisplayContent.bind(this.window);
+        this.window.getDisplayContent = (...args) => {
+            let content = originalGetDisplayContent(...args);
+            content = this.pluginManager.updateDisplayContent(content, this);
+            return content;
+        };
     }
 }
 

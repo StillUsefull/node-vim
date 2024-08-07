@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const createPopup = require('../popup');
-const observer = require('../../observer');
+
 
 class FileTree {
     constructor(parent, fileSelectCallback) {
@@ -84,7 +84,6 @@ class FileTree {
                     this.directoryPath = selectedPath;
                 } else {
                     this.fileSelectCallback(selectedPath);
-                    observer.emit('file-selected', selectedPath);
                 }
             } catch (error) {
                 createPopup('error', this.fileTreeBox.parent, error.message);

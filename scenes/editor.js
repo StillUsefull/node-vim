@@ -1,6 +1,5 @@
 const Editor = require('../boxes/editor/Editor');
 const FileTree = require('../boxes/fileTree');
-const observer = require('../observer');
 
 class EditorScene {
     constructor(parent) {
