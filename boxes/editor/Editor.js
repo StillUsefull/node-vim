@@ -1,4 +1,4 @@
-const createPopup = require('../popup');
+const Popup = require('../popup');
 const FileBuffer = require('./File');
 const Window = require('./Window');
 const PluginManager = require('./pluginManager');
@@ -9,8 +9,8 @@ class Editor {
         this.buffer = new FileBuffer(filePath);
         this.window = new Window(parent, this.buffer, this.buffer.getFileName());
 
-        this.pluginManager = new PluginManager();
-
+        this.pluginManager = PluginManager;
+        this.createPopup = new Popup(this.window.box).show;
         this.initialize(treeBox);
     }
 
@@ -31,7 +31,7 @@ class Editor {
                 switch (true) {
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
-                            createPopup('success', this.window.box, 'File was saved successfully');
+                            this.createPopup('success', 'File was saved successfully');
                         });
                         break;
                     case (key.name === 'left'):

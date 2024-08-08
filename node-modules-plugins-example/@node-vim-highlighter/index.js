@@ -1,8 +1,6 @@
-const Plugin = require('./example/Plugin.interface.js');
-
-class SyntaxHighlightingPlugin extends Plugin{
+class SyntaxHighlightingPlugin{
     constructor() {
-        super('SyntaxHighlightingPlugin');
+        this.name = 'SyntaxHighlightingPlugin';
         this.keywordStyles = {
             'class': { fg: '214', bold: true },  
             'function': { fg: '33', bold: true },  

@@ -1,10 +1,10 @@
 const Editor = require('../boxes/editor/Editor');
-const FileTree = require('../boxes/fileTree');
+const FileManager = require('../boxes/fileTree');
 
 class EditorScene {
     constructor(parent) {
         this.editorScene = this.createEditorScene(parent);
-        this.fileTreeBox = new FileTree(this.editorScene, this.openFile.bind(this));
+        this.fileTreeBox = new FileManager(this.editorScene, this.openFile.bind(this));
         this.initialize();
     }
 

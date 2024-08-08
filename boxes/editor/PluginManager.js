@@ -6,26 +6,30 @@ class PluginManager {
         this.commands = {};
         this.keyBindings = {};
         this.displayUpdaters = [];
-        this.pluginsDirectory = path.join(__dirname, '..', '..' ,'plugins');
-        this.initializePlugins();
+        this.loadPlugins();
     }
 
-    initializePlugins() {
-        this.loadPluginsFromDirectory(this.pluginsDirectory);
-    }
-
-    loadPluginsFromDirectory(directory) {
-        const pluginFiles = fs.readdirSync(directory).filter(file => file.endsWith('.js'));
-        pluginFiles.forEach(file => {
-            const pluginPath = path.join(directory, file);
-            const PluginClass = require(pluginPath);
-            const pluginInstance = new PluginClass();
-            this.loadPlugin(pluginInstance);
-        });
-    }
-
-    loadPlugin(plugin) {
-        plugin.register(this);
+    loadPlugins() {
+        const nodeModulesPath = path.resolve(__dirname, '..', '..','node_modules');
+        const pluginPrefix = '@node-vim';
+    
+        try {
+            const directories = fs.readdirSync(nodeModulesPath);
+            directories.forEach(dir => {
+                if (dir.startsWith(pluginPrefix)) {
+                    try {
+                        const pluginPath = path.join(nodeModulesPath, dir);
+                        const PluginClass = require(pluginPath);
+                        const pluginInstance = new PluginClass();
+                        pluginInstance.register(this);
+                    } catch (error) {
+                        console.log(`Failed to load plugin: ${dir}`, error);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Failed to read node_modules directory', error);
+        }
     }
 
     registerCommand(commandName, commandFunction) {
@@ -46,12 +50,18 @@ class PluginManager {
         }
     }
 
-    handleKeyPress(key, editor) {
+    handleKeyPress(key, context) {
         const keyBinding = `${key.ctrl ? 'ctrl+' : ''}${key.name}`;
         const commandName = this.keyBindings[keyBinding];
+
         if (commandName) {
-            this.executeCommand(commandName, editor);
+            const [prefix, cmd] = commandName.split(':');
+            const currentContext = context.constructor.name.toLowerCase(); 
+            if (prefix === currentContext) {
+                this.executeCommand(commandName, context);
+            }
         }
+    
     }
 
     updateDisplayContent(content, editor) {
@@ -59,4 +69,4 @@ class PluginManager {
     }
 }
 
-module.exports = PluginManager;
+module.exports = new PluginManager();

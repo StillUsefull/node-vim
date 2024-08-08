@@ -1,0 +1,7 @@
+{
+    "name": "@node-vim/files-plugin",
+    "version": "1.0.0",
+    "main": "index.js",
+    "keywords": ["node-vim-plugin", "file-management", "create-file", "delete-file"],
+    "dependencies": {}
+}

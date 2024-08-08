@@ -2,6 +2,7 @@ class Cursor {
     constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
+        this.preferredCursorX = 0
     }
 
     updatePosition(newX, newY, maxX, maxY) {

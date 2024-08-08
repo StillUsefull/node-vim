@@ -1,39 +1,54 @@
-const blessed = require('blessed');
+class Popup {
+    constructor(parent) {
+        this.parent = parent;
+        this.show = this.show.bind(this);
+    }
 
-function createPopup(type, parent, content, timeout = 2000) {
-    const bgColor = type === 'success' ? 'green' : (type === 'error' ? 'red' : 'green');
-    const borderColor = type === 'success' || type === 'error' ? 'white' : 'white';
-    const lines = content.split('\n');
-    const width = Math.max(...lines.map(line => line.length)) + 4; 
-    const height = lines.length + 2; 
+    show(type, content, timeout = 2000) {
+        const bgColor = type === 'success' ? 'green' :
+                        (type === 'error' ? 'red' :
+                        (type === 'info' ? 'yellow' : 'green'));
+        const borderColor = type === 'success' || type === 'error' ? 'white' :
+                            (type === 'info' ? 'black' : 'white');
 
-    const popup = blessed.box({
-        parent,
-        top: 'center',
-        left: 'center',
-        width: Math.min(width, parent.width), 
-        height: Math.min(height, parent.height), 
-        border: {
-            type: 'line'
-        },
-        style: {
+        const lines = content.split('\n');
+        const width = Math.max(...lines.map(line => line.length)) + 4; 
+        const height = lines.length + 2; 
+
+        this.popup = blessed.box({
+            parent: this.parent,
+            top: 'center',
+            left: 'center',
+            width: Math.min(width, this.parent.width), 
+            height: Math.min(height, this.parent.height), 
             border: {
-                fg: borderColor
+                type: 'line'
             },
-            bg: bgColor
-        },
-        content,
-        tags: true,
-        shadow: true
-    });
+            style: {
+                border: {
+                    fg: borderColor
+                },
+                bg: bgColor
+            },
+            content,
+            tags: true,
+            shadow: true
+        });
 
-    parent.append(popup);
-    parent.screen.render();
+        this.parent.append(this.popup);
+        this.parent.screen.render();
 
-    setTimeout(() => {
-        popup.destroy();
-        parent.screen.render();
-    }, timeout);
+        setTimeout(() => {
+            this.hide();
+        }, timeout);
+    }
+
+    hide() {
+        if (this.popup) {
+            this.popup.destroy();
+            this.parent.screen.render();
+        }
+    }
 }
 
-module.exports = createPopup;
+module.exports = Popup;

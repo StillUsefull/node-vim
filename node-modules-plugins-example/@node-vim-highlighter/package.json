@@ -1,0 +1,7 @@
+{
+    "name": "@node-vim/syntax-highlighting-plugin",
+    "version": "1.0.0",
+    "main": "index.js",
+    "keywords": ["node-vim-plugin", "syntax-highlighting"],
+    "dependencies": {}
+}

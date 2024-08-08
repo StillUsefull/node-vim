@@ -1,14 +1,17 @@
 const fs = require('fs-extra');
 const path = require('path');
-const createPopup = require('../popup');
+const Popup = require('../popup');
+const pluginManager = require('../editor/pluginManager');
 
-
-class FileTree {
+class FileManager {
     constructor(parent, fileSelectCallback) {
-        this.fileTreeBox = this.createFileTreeBox(parent);
+        this.box = this.createFileTreeBox(parent);
         this.fileSelectCallback = fileSelectCallback;
         this._directoryPath = process.cwd();
-        this.selectedItem = './';
+        this.pluginManager = pluginManager;
+        this.createPopup = new Popup(this.box.screen).show;
+        this.items = []
+        this.currentIndex = 0
         this.initialize();
     }
 
@@ -50,12 +53,8 @@ class FileTree {
     }
 
     focus() {
-        this.fileTreeBox.focus();
-        this.fileTreeBox.screen.render();
-    }
-
-    unfocus() {
-        
+        this.box.focus();
+        this.box.screen.render();
     }
 
     async updateContent() {
@@ -66,11 +65,16 @@ class FileTree {
                 const isDirectory = await fs.stat(filePath).then(stat => stat.isDirectory());
                 return isDirectory ? `${file}/` : file;
             }))];
-            this.fileTreeBox.setItems(items);
-            this.fileTreeBox.screen.render();
+            this.items = items
+            this.box.setItems(items);
+            this.box.screen.render();
         } catch (error) {
-            createPopup('error', this.fileTreeBox.parent, error.message);
+            this.createPopup('error', error.message);
         }
+    }
+
+    getSelectedItem(){
+        return this.items[this.currentIndex];
     }
 
     async handleEnter(selectedItem) {
@@ -86,7 +90,7 @@ class FileTree {
                     this.fileSelectCallback(selectedPath);
                 }
             } catch (error) {
-                createPopup('error', this.fileTreeBox.parent, error.message);
+                this.createPopup('error', error.message);
             }
         }
     }
@@ -108,6 +112,17 @@ class FileTree {
         return this._directoryPath;
     }
 
+    move(direction) { 
+        let newIndex = this.currentIndex + direction;
+        if (newIndex < 0) {
+            newIndex = 0;
+        } else if (newIndex >= this.box.items.length) {
+            newIndex = this.box.items.length - 1;
+        }
+        this.currentIndex = newIndex;
+    }
+
+
     initialize() {
         this.updateContent();
 
@@ -117,11 +132,22 @@ class FileTree {
             }
         });
 
-        this.fileTreeBox.on('select', (item) => {
+        this.box.on('select', (item) => {
             const selectedItem = item.getText();
             this.handleEnter(selectedItem);
         });
+
+        this.box.on('keypress', (ch, key) => {
+            if (key.name === 'up') {
+                this.move(-1); 
+            } else if (key.name === 'down') {
+                this.move(1); 
+            } else {
+                this.pluginManager.handleKeyPress(key, this);
+            }
+        });
+
     }
 }
 
-module.exports = FileTree;
+module.exports = FileManager;

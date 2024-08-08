@@ -4,7 +4,6 @@ const EditorScene = require('./scenes/editor.js');
 
 const program = blessed.program();
 
-
 const screen = blessed.screen({
     smartCSR: true,
     title: 'node-vim',
