@@ -50,6 +50,18 @@ class FileBuffer {
         return this.lines.length;
     }
 
+    removeCharacter(char, line) {
+        const currentLine = this.getLine(line);
+        if (char > 0) {
+            this.setLine(line, currentLine.slice(0, char - 1) + currentLine.slice(char));
+        } else if (line > 0) {
+            const prevLine = this.getLines()[line - 1].slice(0, -1)
+            const currentLine = this.getLines()[line]
+            this.setLine(line - 1, prevLine + currentLine);
+            this.deleteLine(line);
+        }
+    }
+
     removeAnsiStyles(text) {
         const ansiRegex = /\x1b\[[0-9;]*m/g;
         return text.replace(ansiRegex, '');

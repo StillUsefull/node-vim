@@ -1,7 +1,7 @@
 const Popup = require('../popup');
 const FileBuffer = require('./File');
 const Window = require('./Window');
-const PluginManager = require('./pluginManager');
+const PluginManager = require('../../PluginManager');
 
 
 class Editor {

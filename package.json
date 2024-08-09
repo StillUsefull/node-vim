@@ -1,23 +1,24 @@
 {
-  "name": "vim",
+  "name": "node-vim",
   "version": "1.0.0",
-  "description": "",
+  "description": "Node Vim CLI",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "bin": {
+    "node-vim": "./cli.js"
   },
-  "keywords": [],
+  "scripts": {
+    "setup": ""
+  },
+  "keywords": [
+    "cli",
+    "vim",
+    "node"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "blessed": "^0.1.81",
-    "chalk": "^5.3.0",
-    "config": "^3.3.12",
-    "fs-extra": "^11.2.0",
-    "glob": "^11.0.0",
-    "lodash": "^4.17.21",
-    "prettier": "^3.3.3",
-    "terminal-kit": "^3.1.1",
-    "ws": "^8.18.0"
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0"
   }
 }

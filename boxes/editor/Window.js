@@ -8,7 +8,9 @@ class Window {
         this.isFocused = false;
         this.cursor = new Cursor();
         this.render();
-        this.createPopup = new Popup(this.box.screen).show;
+        this.createPopup = (type, content, timeout = 2000) => {
+            new Popup(this.box.screen).show(type, content, timeout);
+        };
     }
 
     createWindowBox(parent, label) {
@@ -55,19 +57,11 @@ class Window {
 
     handleBackspace() {
         if (!this.isFocused) return;
+    
         try {
-            const lines = this.buffer.lines;
-
-            if (this.cursor.x > 0) {
-                lines[this.cursor.y] = lines[this.cursor.y].slice(0, this.cursor.x - 1) + lines[this.cursor.y].slice(this.cursor.x);
-                this.cursor.x = _.max([this.cursor.x - 1, 0]);  
-            } else if (this.cursor.y > 0) {
-                this.cursor.x = lines[this.cursor.y - 1].length;
-                lines[this.cursor.y - 1] += lines[this.cursor.y];
-                lines.splice(this.cursor.y, 1);
-                this.cursor.y = _.max([this.cursor.y - 1, 0]);  
-            }
-            this.buffer.setLine(this.cursor.y, lines[this.cursor.y]);
+            const { x, y } = this.cursor;
+            this.cursor.moveHorizontal(-1,  this.buffer.getLines())
+            this.buffer.removeCharacter(x, y);
             this.render();
         } catch (error) {
             this.createPopup('error', error.message);
@@ -169,7 +163,7 @@ class Window {
 
     highlightCursor(line, cursorX) {
         const maxX = line.length;
-    
+
         if (cursorX < maxX) {
             return line.slice(0, cursorX) +
                    this.colorize(line[cursorX] || ' ', { bg: '82', fg: '97' }) +
@@ -191,36 +185,13 @@ class Window {
 
     moveCursorVertical(count) {
         const lines = this.buffer.getLines();
-        let cursorY = this.cursor.y + count;
-        cursorY = _.clamp(cursorY, 0, lines.length - 1);
-        this.cursor.y = cursorY;
-        this.cursor.x = _.min([this.cursor.x, (lines[this.cursor.y] || '').length]);
+        this.cursor.moveVertical(count, lines);
         this.render();
     }
 
-    moveCursorHorizontal(count) {
+    moveCursorHorizontal(direction) {
         const lines = this.buffer.getLines();
-        let newX = this.cursor.x + count;
-        let newY = this.cursor.y;
-
-        if (newX < 0) {
-            if (newY > 0) {
-                newY -= 1;
-                newX = (lines[newY] || '').length;
-            } else {
-                newX = 0;
-            }
-        } else if (newX > (lines[newY] || '').length) {
-            if (newY < lines.length - 1) {
-                newY += 1;
-                newX = 0;
-            } else {
-                newX = (lines[newY] || '').length;
-            }
-        }
-
-        this.cursor.x = newX;
-        this.cursor.y = newY;
+        this.cursor.moveHorizontal(direction, lines);
         this.render();
     }
 }

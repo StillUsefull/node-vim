@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const Popup = require('../popup');
-const pluginManager = require('../editor/pluginManager');
+const pluginManager = require('../../PluginManager');
 
 class FileManager {
     constructor(parent, fileSelectCallback) {

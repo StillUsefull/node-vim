@@ -4,5 +4,7 @@ This plugin integrates Prettier code formatting into your Node.js text editor.
 
 ## Installation
 
-```bash
-npm install @node-vim/prettier-plugin
+    ```bash
+   cd plugins
+   node-vim add-plugin @node-vim-prettier
+    ```

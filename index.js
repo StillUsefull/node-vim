@@ -1,5 +1,4 @@
 global.blessed = require('blessed');
-global._ = require('lodash')
 const EditorScene = require('./scenes/editor.js');
 
 const program = blessed.program();

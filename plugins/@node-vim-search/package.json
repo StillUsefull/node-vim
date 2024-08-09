@@ -3,7 +3,5 @@
     "version": "1.0.0",
     "main": "index.js",
     "keywords": ["node-vim-plugin", "prettier"],
-    "dependencies": {
-      "prettier": "^2.5.1"
-    }
+    "dependencies": {}
 }
