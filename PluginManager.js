@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const { execSync } = require('child_process');
 
@@ -12,7 +12,7 @@ class PluginManager {
 
     loadPlugins() {
         const pluginsDir = path.resolve(__dirname, 'node_modules', '@node-vim');
-    
+        if (!fs.pathExistsSync(pluginsDir)) return;
         try {
             const directories = fs.readdirSync(pluginsDir);
             directories.forEach(dir => {

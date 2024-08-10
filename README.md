@@ -109,7 +109,7 @@ Plugins should extend the base Plugin class, which is defined in the ./plugin-in
 
  By creating plugins, you can modify the appearance and behavior of the editor, create custom windows, and implement visual elements like syntax highlighting.
 
-** Example: Syntax Highlighting Plugin **
+**Example: Syntax Highlighting Plugin**
 
 One example of interface customization is a **Syntax Highlighting Plugin**. This plugin identifies specific keywords in the code and applies custom styles to them, making it easier to read and understand the code. Below is an example of how this can be implemented:
 

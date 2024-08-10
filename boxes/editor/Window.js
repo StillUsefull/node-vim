@@ -57,7 +57,6 @@ class Window {
 
     handleBackspace() {
         if (!this.isFocused) return;
-    
         try {
             const { x, y } = this.cursor;
             this.cursor.moveHorizontal(-1,  this.buffer.getLines())
@@ -71,32 +70,26 @@ class Window {
     handleEnter() {
         if (!this.isFocused) return;
         try {
-            const lines = this.buffer.lines;
-            const currentLine = lines[this.cursor.y] || '';
-
+            const currentLine = this.buffer.getLine(this.cursor.y);
             const beforeCursor = currentLine.slice(0, this.cursor.x);
             const afterCursor = currentLine.slice(this.cursor.x);
-
-            lines[this.cursor.y] = beforeCursor;
-            lines.splice(this.cursor.y + 1, 0, afterCursor);
-
             this.buffer.setLine(this.cursor.y, beforeCursor);
-            this.buffer.setLine(this.cursor.y + 1, afterCursor);
-
-            this.cursor.x = 0;
-            this.cursor.y += 1;
+            this.buffer.insertLine(this.cursor.y + 1, afterCursor);
+            this.cursor.preferredCursorX = 0;
+            this.cursor.moveVertical(1, this.buffer.getLines());
             this.render();
         } catch (error) {
             this.createPopup('error', error.message);
         }
     }
 
+
     handleInput(ch) {
         if (!this.isFocused) return;
         try {
             const lines = this.buffer.lines;
             let cursorYoffset = 0;
-
+            
             if (typeof lines[this.cursor.y] !== 'undefined') {
                 lines[this.cursor.y] = lines[this.cursor.y].slice(0, this.cursor.x) + ch + lines[this.cursor.y].slice(this.cursor.x);
             } else {
@@ -105,6 +98,7 @@ class Window {
             }
             this.buffer.setLine(this.cursor.y, lines[this.cursor.y]);
             this.cursor.x += 1;
+            this.cursor.preferredCursorX += 1;
             this.cursor.y += cursorYoffset;
             this.render();
         } catch (error) {
