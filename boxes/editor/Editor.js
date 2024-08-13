@@ -1,17 +1,24 @@
+const EventEmitter = require('events')
+
 const Popup = require('../popup');
 const FileBuffer = require('./File');
 const Window = require('./Window');
 const PluginManager = require('../../PluginManager');
 
 
-class Editor {
+class Editor extends EventEmitter {
     constructor(parent, filePath, treeBox) {
+        super()
         this.buffer = new FileBuffer(filePath);
         this.window = new Window(parent, this.buffer, this.buffer.getFileName());
-
         this.pluginManager = PluginManager;
         this.createPopup = new Popup(this.window.box).show;
         this.initialize(treeBox);
+    }
+
+    destroy(){
+        this.window.box.destroy();
+        this.window = null;
     }
 
     focus() {
@@ -29,6 +36,15 @@ class Editor {
         this.window.box.on('keypress', (ch, key) => {
             if (this.window.isFocused) {
                 switch (true) {
+                    case (key.ctrl && key.name === 'right'):
+                        this.emit('switchTab', 1);
+                        break
+                    case (key.ctrl && key.name === 'left'):
+                        this.emit('switchTab', -1);
+                        break
+                    case (key.ctrl && key.name === 'delete'):
+                        this.emit('closeTab');
+                        break
                     case (key.ctrl && key.name === 's'):
                         this.buffer.save().then(() => {
                             this.createPopup('success', 'File was saved successfully');

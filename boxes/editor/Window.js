@@ -17,10 +17,10 @@ class Window {
         return blessed.box({
             label,
             parent,
-            top: 0,
+            bottom: 0,
             right: 0,
             width: '84%',
-            height: '99%',
+            height: '96%',
             border: {
                 type: 'line'
             },
